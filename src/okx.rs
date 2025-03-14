@@ -1,5 +1,7 @@
+use core::panic;
+
 use async_trait::async_trait;
-use crate::candle::CandleStickBuilder;
+use crate::candle::{self, CandleStickBuilder};
 use crate::common::ExchangeFeed;
 use futures::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
@@ -58,13 +60,24 @@ impl ExchangeFeed for OKX {
         on_success: impl FnOnce(String) + Send,
     ) -> Result<String, String> {
         println!("url: {:?}", Self::WS_URL);
+        let parts_sym:Vec<&str> = symbols.split('@').collect();
+
+        if parts_sym.len() < 2 {
+            panic!("in correct symbol: {}", symbols);
+        }
+
+        let symbol = parts_sym[0];
+        let channel = parts_sym[1];
+
+        println!("sym: {}, channel:{}", symbol, channel); 
+
         let (mut ws_stream, _) = connect_async(Self::WS_URL).await.expect("connected.");
 
         let subscribe_message = WebSocketRequest {
             op: "subscribe".to_string(),
             args: vec![ChannelRequest {
-                channel: "candle1m".to_string(),
-                instId: format!("{}", symbols),
+                channel: format!("{}", channel),
+                instId: format!("{}", symbol),
             }],
         };
 
