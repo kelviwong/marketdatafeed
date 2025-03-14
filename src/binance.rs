@@ -47,13 +47,22 @@ impl ExchangeFeed for Binance {
 
         on_success("Binance connected.".to_string());
 
+        let mut candle_stick_data = CandleStickBuilder::new().build();
+        candle_stick_data.source = "Binance".to_string();
+
         while let Some(Ok(msg)) = ws_stream.next().await {
             match msg {
                 Message::Text(text) => {
                     // Deserialize the received JSON message into a WebSocketMessage
                     let _ws_message: WebSocketMessage =
                         serde_json::from_str(&text).expect("Failed to deserialize message");
-                    println!("Recieved: {:?}", _ws_message);
+                        candle_stick_data.ts = _ws_message.kline.open_time;
+                        candle_stick_data.c = _ws_message.kline.close.parse::<f64>().unwrap_or(0.0);
+                        candle_stick_data.o = _ws_message.kline.open.parse::<f64>().unwrap_or(0.0);
+                        candle_stick_data.h = _ws_message.kline.high.parse::<f64>().unwrap_or(0.0);
+                        candle_stick_data.l = _ws_message.kline.low.parse::<f64>().unwrap_or(0.0);
+                        candle_stick_data.v = _ws_message.kline.volume.parse::<f64>().unwrap_or(0.0);
+                        println!("CandleStick data: {:?}", candle_stick_data);
                 }
                 _ => (),
             }
@@ -62,7 +71,6 @@ impl ExchangeFeed for Binance {
         Ok("Finished. Binance".to_string())
     }
 }
-// }
 
 #[cfg(test)]
 mod tests {
