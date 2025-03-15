@@ -1,9 +1,9 @@
 use core::panic;
 
-use async_trait::async_trait;
-use crate::candle::{self, CandleStickBuilder};
+use crate::candle::{CandleStickBuilder};
 use crate::common::ExchangeFeed;
 use crate::config::Config;
+use async_trait::async_trait;
 use futures::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
 use tokio_tungstenite::connect_async;
@@ -70,17 +70,13 @@ impl OKX {
 
 #[async_trait]
 impl ExchangeFeed for OKX {
-    // const WS_URL: &str = "wss://ws.okx.com:8443/ws/v5/business";
-
-    async fn connect(&self,
-        on_success: impl FnOnce(String) + Send,
-    ) -> Result<String, String> {
+    async fn connect(&self, on_success: impl FnOnce(String) + Send) -> Result<String, String> {
         if !self.enable {
             return Ok("Disabled. OKX.".to_string());
         }
 
         println!("url: {:?}", self.base_url);
-        let parts_sym:Vec<&str> = self.symbol.split('@').collect();
+        let parts_sym: Vec<&str> = self.symbol.split('@').collect();
 
         if parts_sym.len() < 2 {
             panic!("in correct symbol: {}", self.symbol);
@@ -89,7 +85,7 @@ impl ExchangeFeed for OKX {
         let symbol = parts_sym[0];
         let channel = parts_sym[1];
 
-        println!("sym: {}, channel:{}", symbol, channel); 
+        println!("sym: {}, channel:{}", symbol, channel);
 
         let (mut ws_stream, _) = connect_async(&self.base_url).await.expect("connected.");
 

@@ -6,7 +6,6 @@ use futures::stream::StreamExt;
 use serde::Deserialize;
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::protocol::Message;
-use std::error::Error;
 
 // mod ExchangeFeeder {
 #[derive(Debug, Deserialize)]
@@ -31,7 +30,7 @@ struct WebSocketMessage {
     kline: KlineData,
 }
 
-pub struct Binance{
+pub struct Binance {
     pub base_url: String,
     pub symbol: String,
     pub enable: bool,
@@ -51,15 +50,11 @@ impl Binance {
 
 #[async_trait]
 impl ExchangeFeed for Binance {
-    async fn connect(
-        &self,
-        on_success: impl FnOnce(String) + Send,
-    ) -> Result<String, String> {
-
+    async fn connect(&self, on_success: impl FnOnce(String) + Send) -> Result<String, String> {
         if (!self.enable) {
             return Ok("Disabled. Binance.".to_string());
         }
-        
+
         let connection_str = format!("{}{}", self.base_url, self.symbol);
         println!("connecting... {:?}", connection_str);
 
@@ -79,7 +74,7 @@ impl ExchangeFeed for Binance {
 
         on_success("Binance connected.".to_string());
 
-        let mut ws_stream = ws_stream.unwrap(); 
+        let mut ws_stream = ws_stream.unwrap();
 
         let mut candle_stick_data = CandleStickBuilder::new().build();
         candle_stick_data.source = "Binance".to_string();
