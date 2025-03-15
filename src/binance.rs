@@ -1,10 +1,12 @@
 use crate::candle::CandleStickBuilder;
 use crate::common::ExchangeFeed;
+use crate::config::Config;
 use async_trait::async_trait;
 use futures::stream::StreamExt;
 use serde::Deserialize;
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::protocol::Message;
+use std::error::Error;
 
 // mod ExchangeFeeder {
 #[derive(Debug, Deserialize)]
@@ -29,24 +31,39 @@ struct WebSocketMessage {
     kline: KlineData,
 }
 
-pub struct Binance;
+pub struct Binance{
+    pub base_url: String,
+    pub symbol: String,
+    pub enable: bool,
+}
+
+impl Binance {
+    pub fn new(config_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        let config = Config::from_file(config_path)?;
+
+        Ok(Binance {
+            base_url: config.binance.base_url,
+            symbol: config.binance.symbol,
+            enable: config.binance.enable,
+        })
+    }
+}
 
 #[async_trait]
 impl ExchangeFeed for Binance {
-    const WS_URL: &str = "wss://stream.binance.com:9443/ws/";
-
-    //wss://stream.binance.com:9443/ws/btcusdt@kline_1m
     async fn connect(
-        symbols: &str,
+        &self,
         on_success: impl FnOnce(String) + Send,
     ) -> Result<String, String> {
-        // let connection_str = format!("{}{}", Self::WS_URL, symbols);
-        let connection_str = "ws://localhost:8080";
 
+        if (!self.enable) {
+            return Ok("Disabled. Binance.".to_string());
+        }
+        
+        let connection_str = format!("{}{}", self.base_url, self.symbol);
         println!("connecting... {:?}", connection_str);
 
         // Connect to Binance WebSocket
-        // let (mut ws_stream, _) = connect_async(connection_str).await.expect("connected.");
         let mut ws_stream = None;
         match connect_async(connection_str).await {
             Ok((mut stream, _)) => {

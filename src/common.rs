@@ -1,10 +1,9 @@
 use async_trait::async_trait;
+use std::error::Error;
 
 #[async_trait]
 pub trait ExchangeFeed {
-    const WS_URL: &'static str;
-    async fn connect(
-        symbols: &str,
+    async fn connect(&self,
         on_success: impl FnOnce(String) + Send,
     ) -> Result<String, String>;
 }

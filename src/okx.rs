@@ -3,6 +3,7 @@ use core::panic;
 use async_trait::async_trait;
 use crate::candle::{self, CandleStickBuilder};
 use crate::common::ExchangeFeed;
+use crate::config::Config;
 use futures::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
 use tokio_tungstenite::connect_async;
@@ -49,21 +50,40 @@ struct CandlestickData {
     volume: String,
 }
 
-pub struct OKX;
+pub struct OKX {
+    pub base_url: String,
+    pub symbol: String,
+    pub enable: bool,
+}
+
+impl OKX {
+    pub fn new(config_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        let config = Config::from_file(config_path)?;
+
+        Ok(OKX {
+            base_url: config.okx.base_url,
+            symbol: config.okx.symbol,
+            enable: config.okx.enable,
+        })
+    }
+}
 
 #[async_trait]
 impl ExchangeFeed for OKX {
-    const WS_URL: &str = "wss://ws.okx.com:8443/ws/v5/business";
+    // const WS_URL: &str = "wss://ws.okx.com:8443/ws/v5/business";
 
-    async fn connect(
-        symbols: &str,
+    async fn connect(&self,
         on_success: impl FnOnce(String) + Send,
     ) -> Result<String, String> {
-        println!("url: {:?}", Self::WS_URL);
-        let parts_sym:Vec<&str> = symbols.split('@').collect();
+        if !self.enable {
+            return Ok("Disabled. OKX.".to_string());
+        }
+
+        println!("url: {:?}", self.base_url);
+        let parts_sym:Vec<&str> = self.symbol.split('@').collect();
 
         if parts_sym.len() < 2 {
-            panic!("in correct symbol: {}", symbols);
+            panic!("in correct symbol: {}", self.symbol);
         }
 
         let symbol = parts_sym[0];
@@ -71,7 +91,7 @@ impl ExchangeFeed for OKX {
 
         println!("sym: {}, channel:{}", symbol, channel); 
 
-        let (mut ws_stream, _) = connect_async(Self::WS_URL).await.expect("connected.");
+        let (mut ws_stream, _) = connect_async(&self.base_url).await.expect("connected.");
 
         let subscribe_message = WebSocketRequest {
             op: "subscribe".to_string(),
