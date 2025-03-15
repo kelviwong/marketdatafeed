@@ -1,13 +1,14 @@
 use core::panic;
 
-use crate::candle::{CandleStickBuilder};
-use crate::common::ExchangeFeed;
+use crate::candle::CandleStickBuilder;
+use crate::common::{ExchangeFeed, Service};
 use crate::config::Config;
 use async_trait::async_trait;
 use futures::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::protocol::Message;
+use std::error::Error;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct WebSocketResponse {
@@ -51,20 +52,40 @@ struct CandlestickData {
 }
 
 pub struct OKX {
-    pub base_url: String,
-    pub symbol: String,
-    pub enable: bool,
+    base_url: String,
+    symbol: String,
+    enable: bool,
+    name: String,
 }
 
 impl OKX {
-    pub fn new(config_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(config_path: &str) -> Result<Self, Box<dyn Error>> {
         let config = Config::from_file(config_path)?;
 
         Ok(OKX {
             base_url: config.okx.base_url,
             symbol: config.okx.symbol,
             enable: config.okx.enable,
+            name: "OKX".to_string(),
         })
+    }
+
+    pub fn base_url(&self) -> &str {
+        &self.base_url
+    }
+
+    pub fn enable(&self) -> bool {
+        self.enable
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+impl Service for OKX {
+    fn name(&self) -> &str {
+        &self.name // ✅ Returns the field value
     }
 }
 

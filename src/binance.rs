@@ -1,5 +1,5 @@
 use crate::candle::CandleStickBuilder;
-use crate::common::ExchangeFeed;
+use crate::common::{BasicService, ExchangeFeed, Service};
 use crate::config::Config;
 use async_trait::async_trait;
 use futures::stream::StreamExt;
@@ -30,10 +30,10 @@ struct WebSocketMessage {
     kline: KlineData,
 }
 
+// private field ensure caller cannot create this struct directly.
+// so it need to go through new
 pub struct Binance {
-    pub base_url: String,
-    pub symbol: String,
-    pub enable: bool,
+    pub service: BasicService,
 }
 
 impl Binance {
@@ -41,27 +41,52 @@ impl Binance {
         let config = Config::from_file(config_path)?;
 
         Ok(Binance {
-            base_url: config.binance.base_url,
-            symbol: config.binance.symbol,
-            enable: config.binance.enable,
+            service: BasicService::new(
+                config.binance.base_url,
+                config.binance.symbol,
+                config.binance.enable,
+                "Binance".to_string(),
+            ),
         })
+    }
+
+    pub fn base_url(&self) -> &str {
+        &self.service.base_url()
+    }
+
+    pub fn enable(&self) -> bool {
+        self.service.enable()
+    }
+
+    pub fn name(&self) -> &str {
+        &self.service.name()
+    }
+
+    pub fn symbol(&self) -> &str {
+        &self.service.symbol()
+    }
+}
+
+impl Service for Binance {
+    fn name(&self) -> &str {
+        &self.name() // ✅ Returns the field value
     }
 }
 
 #[async_trait]
 impl ExchangeFeed for Binance {
     async fn connect(&self, on_success: impl FnOnce(String) + Send) -> Result<String, String> {
-        if (!self.enable) {
-            return Ok("Disabled. Binance.".to_string());
+        if !self.enable() {
+            return Ok(format!("Disabled. {}", self.name()));
         }
 
-        let connection_str = format!("{}{}", self.base_url, self.symbol);
+        let connection_str = format!("{}{}", self.base_url(), self.symbol());
         println!("connecting... {:?}", connection_str);
 
         // Connect to Binance WebSocket
         let mut ws_stream = None;
         match connect_async(connection_str).await {
-            Ok((mut stream, _)) => {
+            Ok((stream, _)) => {
                 // Connection was successful
                 ws_stream = Some(stream);
                 println!("Connected to WebSocket server");
@@ -72,12 +97,12 @@ impl ExchangeFeed for Binance {
             }
         }
 
-        on_success("Binance connected.".to_string());
+        on_success(format!("{} connected.", self.name()));
 
         let mut ws_stream = ws_stream.unwrap();
 
         let mut candle_stick_data = CandleStickBuilder::new().build();
-        candle_stick_data.source = "Binance".to_string();
+        candle_stick_data.source = self.name().to_string();
 
         while let Some(result) = ws_stream.next().await {
             match result {
@@ -117,7 +142,7 @@ impl ExchangeFeed for Binance {
             }
         }
 
-        Ok("Finished. Binance".to_string())
+        Ok(format!("Finished. {}", self.name()))
     }
 }
 
