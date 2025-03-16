@@ -1,5 +1,5 @@
 use crate::candle::candle_stick;
-use crate::common::{BasicService, ExchangeFeed, Service};
+use crate::common::{BasicService, Exchange, ExchangeFeed, Service};
 use crate::config::Config;
 use async_trait::async_trait;
 use futures::sink::SinkExt;
@@ -83,6 +83,12 @@ impl OKX {
 
     pub fn symbol(&self) -> &str {
         &self.service.symbol()
+    }
+}
+
+impl Exchange for OKX {
+    fn new(config_path: &str) -> Self where Self: Sized {
+        OKX::new(config_path).unwrap()
     }
 }
 

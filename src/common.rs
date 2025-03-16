@@ -1,10 +1,17 @@
 use async_trait::async_trait;
 use futures::StreamExt;
 use tokio::net::TcpStream;
-use std::error::Error;
 use tokio_tungstenite::{connect_async, tungstenite::{Message, Utf8Bytes}, WebSocketStream};
 
 use crate::candle::{candle_stick, CandleStickBuilder};
+
+pub trait Exchange {
+    fn new(config_path: &str) -> Self where Self: Sized;
+}
+
+pub fn create_exchange<T: Exchange>(config_path: &str) -> T {
+    T::new(config_path)
+}
 
 #[async_trait]
 pub trait ExchangeFeed: Service {
