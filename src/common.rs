@@ -1,6 +1,6 @@
+use std::sync::{Arc, Mutex};
 use std::{thread, time::Duration};
 use tokio::{runtime::Runtime, time::sleep};
-use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use futures::StreamExt;
@@ -9,13 +9,12 @@ use tokio_tungstenite::{
     WebSocketStream, connect_async,
     tungstenite::{Message, Utf8Bytes},
 };
-use tracing::{info, warn, error};
+use tracing::{error, info, warn};
 
-#[cfg(target_os = "linux")]
-use nix::unistd::Pid;
 #[cfg(target_os = "linux")]
 use nix::sched::{CpuSet, sched_setaffinity};
-
+#[cfg(target_os = "linux")]
+use nix::unistd::Pid;
 
 use crate::candle::{CandleStickBuilder, candle_stick};
 
@@ -60,7 +59,6 @@ pub fn create_exchange<T: Exchange>(config_path: &str) -> T {
 
 #[async_trait]
 pub trait ExchangeFeed: Service {
-    
     fn create_single_thread_runtime() -> Result<Runtime, Box<dyn std::error::Error>> {
         // let rt = tokio::runtime::Builder::new_multi_thread()
         let rt = tokio::runtime::Builder::new_current_thread()
@@ -130,9 +128,7 @@ pub trait ExchangeFeed: Service {
         let self_clone = Arc::clone(&feed);
 
         thread::spawn(move || {
-            if pin_id > -1 {
-                set_affinity(pin_id);
-            }
+            set_affinity(pin_id);
 
             // get_affinity();
 
