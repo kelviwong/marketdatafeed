@@ -34,7 +34,7 @@ fn get_affinity() {
 
 #[cfg(target_os = "linux")]
 fn set_affinity(pin_id: usize) {
-    let num_cores = sysconf(SysconfVar::_NPROCESSORS_ONLN).unwrap().unwrap();
+    let num_cores = sysconf(nix::unistd::SysconfVar::_NPROCESSORS_ONLN);
     log!("Number of cores: {}", num_cores);
 
     let mut cpuset = CpuSet::new();
