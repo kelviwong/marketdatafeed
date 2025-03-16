@@ -122,9 +122,9 @@ pub trait ExchangeFeed: Service {
     where
         Self: Send + Sync + 'static,
     {
-        println!("connecting... on thread");
+        info!("connecting... on thread");
         let success_callback = |message: String| {
-            println!("Success callback received message: {}", message);
+            info!("Success callback received message: {}", message);
         };
 
         let self_clone = Arc::clone(&feed);
@@ -145,7 +145,7 @@ pub trait ExchangeFeed: Service {
             };
 
             rt.block_on(async {
-                println!(
+                info!(
                     "Started {} thread: {:?}",
                     self_clone.lock().unwrap().name(),
                     std::thread::current().id()
