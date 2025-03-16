@@ -9,13 +9,10 @@ use tokio_tungstenite::{
     WebSocketStream, connect_async,
     tungstenite::{Message, Utf8Bytes},
 };
+use tracing::{info, warn, error};
 
 #[cfg(target_os = "linux")]
 use nix::unistd::Pid;
-#[cfg(target_os = "linux")]
-use nix::unistd::sysconf;
-#[cfg(target_os = "linux")]
-use nix::sys::sysctl::SysctlVar;
 #[cfg(target_os = "linux")]
 use nix::sched::{CpuSet, sched_setaffinity};
 
@@ -34,21 +31,21 @@ fn get_affinity() {
 
 #[cfg(target_os = "linux")]
 fn set_affinity(pin_id: usize) {
-    let num_cores = sysconf(nix::unistd::SysconfVar::_NPROCESSORS_ONLN);
-    log!("Number of cores: {}", num_cores);
+    // let num_cores = sysconf(nix::unistd::SysconfVar::_NPROCESSORS_ONLN);
+    // info!("Number of cores: {}", num_cores);
 
     let mut cpuset = CpuSet::new();
     cpuset.set(pin_id).unwrap(); // Pin to CPU 0
 
     let pid = nix::unistd::Pid::this();
     sched_setaffinity(pid, &cpuset).unwrap();
-    log!("Affinity set on Linux on {:?}", pin_id);
+    info!("Affinity set on Linux on {:?}", pin_id);
 }
 
 #[cfg(target_os = "linux")]
 fn get_affinity() {
     let cpuset = sched_getaffinity(Pid::this()).unwrap();
-    log!("Thread is running on cores: {:?}", cpuset);
+    info!("Thread is running on cores: {:?}", cpuset);
 }
 
 pub trait Exchange {
@@ -137,7 +134,7 @@ pub trait ExchangeFeed: Service {
                 set_affinity(pin_id);
             }
 
-            get_affinity();
+            // get_affinity();
 
             let rt = match Self::create_single_thread_runtime() {
                 Ok(rt) => rt,
