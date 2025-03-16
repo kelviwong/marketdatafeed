@@ -1,6 +1,5 @@
 use std::{thread, time::Duration};
 use tokio::{runtime::Runtime, time::sleep};
-
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
@@ -14,7 +13,6 @@ use tokio_tungstenite::{
 #[cfg(target_os = "linux")]
 use nix::sched::{CpuSet, sched_setaffinity};
 
-use std::process::id;
 
 use crate::candle::{CandleStickBuilder, candle_stick};
 
@@ -23,14 +21,28 @@ fn set_affinity(pin_id: u8) {
     println!("CPU affinity is not supported on macOS.");
 }
 
+#[cfg(target_os = "macos")]
+fn get_affinity() {
+    println!("Get CPU affinity is not supported on macOS.");
+}
+
 #[cfg(target_os = "linux")]
 fn set_affinity(pin_id: u8) {
+    let num_cores = sysconf(SysconfVar::_NPROCESSORS_ONLN).unwrap().unwrap();
+    log!("Number of cores: {}", num_cores);
+
     let mut cpuset = CpuSet::new();
-    cpuset.set(0).unwrap(); // Pin to CPU 0
+    cpuset.set(pin_id).unwrap(); // Pin to CPU 0
 
     let pid = nix::unistd::Pid::this();
     sched_setaffinity(pid, &cpuset).unwrap();
-    println!("Affinity set on Linux.");
+    log!("Affinity set on Linux on {:?}", pin_id);
+}
+
+#[cfg(target_os = "linux")]
+fn get_affinity() {
+    let cpuset = sched_getaffinity(Pid::this()).unwrap();
+    log!("Thread is running on cores: {:?}", cpuset);
 }
 
 pub trait Exchange {
@@ -117,7 +129,9 @@ pub trait ExchangeFeed: Service {
         thread::spawn(move || {
             if pin_id > 0 {
                 set_affinity(pin_id);
-            } 
+            }
+
+            get_affinity();
 
             let rt = match Self::create_single_thread_runtime() {
                 Ok(rt) => rt,
