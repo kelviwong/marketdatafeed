@@ -11,6 +11,12 @@ use tokio_tungstenite::{
 };
 
 #[cfg(target_os = "linux")]
+use nix::unistd::Pid;
+#[cfg(target_os = "linux")]
+use nix::unistd::sysconf;
+#[cfg(target_os = "linux")]
+use nix::sys::sysctl::SysctlVar;
+#[cfg(target_os = "linux")]
 use nix::sched::{CpuSet, sched_setaffinity};
 
 
@@ -27,7 +33,7 @@ fn get_affinity() {
 }
 
 #[cfg(target_os = "linux")]
-fn set_affinity(pin_id: u8) {
+fn set_affinity(pin_id: usize) {
     let num_cores = sysconf(SysconfVar::_NPROCESSORS_ONLN).unwrap().unwrap();
     log!("Number of cores: {}", num_cores);
 
