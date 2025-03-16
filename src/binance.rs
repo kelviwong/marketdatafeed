@@ -82,6 +82,10 @@ impl Service for Binance {
     fn base(&self) -> &str {
         &self.base_url()
     }
+
+    fn enable(&self) -> bool {
+        self.enable()
+    }
 }
 
 #[async_trait]

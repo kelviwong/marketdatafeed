@@ -64,7 +64,7 @@ impl OKX {
                 config.okx.base_url,
                 config.okx.symbol,
                 config.okx.enable,
-                "OKXN".to_string(),
+                "OKX".to_string(),
             ),
         })
     }
@@ -87,7 +87,10 @@ impl OKX {
 }
 
 impl Exchange for OKX {
-    fn new(config_path: &str) -> Self where Self: Sized {
+    fn new(config_path: &str) -> Self
+    where
+        Self: Sized,
+    {
         OKX::new(config_path).unwrap()
     }
 }
@@ -103,6 +106,10 @@ impl Service for OKX {
 
     fn base(&self) -> &str {
         &self.base_url()
+    }
+
+    fn enable(&self) -> bool {
+        self.enable()
     }
 }
 
