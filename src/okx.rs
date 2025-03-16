@@ -9,6 +9,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::WebSocketStream;
 use tokio_tungstenite::tungstenite::Utf8Bytes;
 use tokio_tungstenite::tungstenite::protocol::Message;
+use tracing::{info, warn, error};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct WebSocketResponse {
@@ -120,9 +121,9 @@ impl ExchangeFeed for OKX {
             Ok(response) => {
                 if let Some(event) = response.event {
                     if (event == "subscribe") {
-                        println!("subscribe successful: {:?}", response.arg);
+                        info!("subscribe successful: {:?}", response.arg);
                     } else if (event == "error") {
-                        println!("fail subscribe.");
+                        error!("fail subscribe.");
                     }
                 } else {
                     if let Some(data) = response.data {
@@ -136,13 +137,13 @@ impl ExchangeFeed for OKX {
                             candle_stick_data.v = candle[5].parse::<f64>().unwrap_or(0.0);
 
                             // Print the candlestick data
-                            println!("CandleStick data: {:?}", candle_stick_data);
+                            info!("CandleStick data: {:?}", candle_stick_data);
                         }
                     }
                 }
             }
             Err(err) => {
-                println!("Failed to deserialize message: {}", err);
+                error!("Failed to deserialize message: {}", err);
             }
         }
     }
@@ -158,7 +159,7 @@ impl ExchangeFeed for OKX {
         let symbol = parts_sym[0];
         let channel = parts_sym[1];
 
-        println!("sym: {}, channel:{}", symbol, channel);
+        info!("sym: {}, channel:{}", symbol, channel);
 
         (symbol, channel)
     }

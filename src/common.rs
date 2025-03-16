@@ -1,17 +1,37 @@
 use std::{thread, time::Duration};
-use tokio::time::sleep;
+use tokio::{runtime::Runtime, time::sleep};
 
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use futures::StreamExt;
-use tokio::{net::TcpStream, runtime::Builder};
+use tokio::net::TcpStream;
 use tokio_tungstenite::{
     WebSocketStream, connect_async,
     tungstenite::{Message, Utf8Bytes},
 };
 
+#[cfg(target_os = "linux")]
+use nix::sched::{CpuSet, sched_setaffinity};
+
+use std::process::id;
+
 use crate::candle::{CandleStickBuilder, candle_stick};
+
+#[cfg(target_os = "macos")]
+fn set_affinity(pin_id: u8) {
+    println!("CPU affinity is not supported on macOS.");
+}
+
+#[cfg(target_os = "linux")]
+fn set_affinity(pin_id: u8) {
+    let mut cpuset = CpuSet::new();
+    cpuset.set(0).unwrap(); // Pin to CPU 0
+
+    let pid = nix::unistd::Pid::this();
+    sched_setaffinity(pid, &cpuset).unwrap();
+    println!("Affinity set on Linux.");
+}
 
 pub trait Exchange {
     fn new(config_path: &str) -> Self
@@ -25,6 +45,16 @@ pub fn create_exchange<T: Exchange>(config_path: &str) -> T {
 
 #[async_trait]
 pub trait ExchangeFeed: Service {
+    
+    fn create_single_thread_runtime() -> Result<Runtime, Box<dyn std::error::Error>> {
+        // let rt = tokio::runtime::Builder::new_multi_thread()
+        let rt = tokio::runtime::Builder::new_current_thread()
+            // .worker_threads(1)
+            .enable_all()
+            .build()?;
+        Ok(rt)
+    }
+
     async fn connect(&self, on_success: impl FnOnce(String) + Send) -> Result<String, String> {
         let (symbol, channel) = Self::get_sub_channel(self.symbol());
 
@@ -73,7 +103,7 @@ pub trait ExchangeFeed: Service {
         Ok(format!("Finished. {}", self.name()))
     }
 
-    fn connect_on_thread(binance: Arc<Mutex<Self>>)
+    fn connect_on_thread(feed: Arc<Mutex<Self>>, pin_id: u8)
     where
         Self: Send + Sync + 'static,
     {
@@ -82,18 +112,18 @@ pub trait ExchangeFeed: Service {
             println!("Success callback received message: {}", message);
         };
 
-        let self_clone = Arc::clone(&binance);
+        let self_clone = Arc::clone(&feed);
 
         thread::spawn(move || {
-            let rt: tokio::runtime::Runtime = match Builder::new_multi_thread()
-                .worker_threads(1) // Only 1 thread
-                .enable_all()
-                .build()
-            {
+            if pin_id > 0 {
+                set_affinity(pin_id);
+            } 
+
+            let rt = match Self::create_single_thread_runtime() {
                 Ok(rt) => rt,
                 Err(e) => {
                     eprintln!("Error building runtime: {}", e);
-                    return; // Or handle the error as needed
+                    return;
                 }
             };
 

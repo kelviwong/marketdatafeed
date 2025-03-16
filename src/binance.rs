@@ -4,6 +4,7 @@ use crate::config::Config;
 use async_trait::async_trait;
 use serde::Deserialize;
 use tokio_tungstenite::tungstenite::Utf8Bytes;
+use tracing::{info, warn, error};
 
 #[derive(Debug, Deserialize)]
 struct KlineData {
@@ -101,11 +102,11 @@ impl ExchangeFeed for Binance {
                 candle_stick_data.l = ws_message.kline.low.parse::<f64>().unwrap_or(0.0);
                 candle_stick_data.v = ws_message.kline.volume.parse::<f64>().unwrap_or(0.0);
 
-                println!("CandleStick data: {:?}", candle_stick_data);
+                info!("CandleStick data: {:?}", candle_stick_data);
             }
             Err(e) => {
-                println!("Failed to deserialize message: {:?}", e);
-                println!("{:?}", text);
+                error!("Failed to deserialize message: {:?}", e);
+                error!("{:?}", text);
             }
         }
     }
