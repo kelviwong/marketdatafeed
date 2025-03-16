@@ -130,7 +130,7 @@ pub trait ExchangeFeed: Service {
         let self_clone = Arc::clone(&feed);
 
         thread::spawn(move || {
-            if pin_id > 0 {
+            if pin_id > -1 {
                 set_affinity(pin_id);
             }
 
