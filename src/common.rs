@@ -23,7 +23,7 @@ use nix::sched::{CpuSet, sched_setaffinity};
 use crate::candle::{CandleStickBuilder, candle_stick};
 
 #[cfg(target_os = "macos")]
-fn set_affinity(pin_id: u8) {
+fn set_affinity(pin_id: usize) {
     println!("CPU affinity is not supported on macOS.");
 }
 
@@ -121,7 +121,7 @@ pub trait ExchangeFeed: Service {
         Ok(format!("Finished. {}", self.name()))
     }
 
-    fn connect_on_thread(feed: Arc<Mutex<Self>>, pin_id: u8)
+    fn connect_on_thread(feed: Arc<Mutex<Self>>, pin_id: usize)
     where
         Self: Send + Sync + 'static,
     {
