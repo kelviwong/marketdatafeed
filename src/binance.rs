@@ -1,4 +1,4 @@
-use crate::candle::{candle_stick};
+use crate::candle::candle_stick;
 use crate::common::{BasicService, Exchange, ExchangeFeed, Service};
 use crate::config::Config;
 use async_trait::async_trait;

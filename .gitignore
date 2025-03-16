@@ -1,1 +1,6 @@
 /target
+HEAD
+description
+info/
+hooks/
+config
