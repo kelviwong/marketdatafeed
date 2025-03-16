@@ -44,8 +44,8 @@ fn set_affinity(pin_id: usize) {
 
 #[cfg(target_os = "linux")]
 fn get_affinity() {
-    let cpuset = sched_getaffinity(Pid::this()).unwrap();
-    info!("Thread is running on cores: {:?}", cpuset);
+    // let cpuset = sched_getaffinity(Pid::this()).unwrap();
+    // info!("Thread is running on cores: {:?}", cpuset);
 }
 
 pub trait Exchange {
