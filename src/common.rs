@@ -12,6 +12,8 @@ use tokio_tungstenite::{
 use tracing::{error, info, warn};
 
 #[cfg(target_os = "linux")]
+use nix::unistd::gettid;
+#[cfg(target_os = "linux")]
 use nix::sched::{CpuSet, sched_setaffinity};
 #[cfg(target_os = "linux")]
 use nix::unistd::Pid;
@@ -55,6 +57,16 @@ pub trait Exchange {
 
 pub fn create_exchange<T: Exchange>(config_path: &str) -> T {
     T::new(config_path)
+}
+
+#[cfg(target_os = "linux")]
+fn getpid() {
+    info!("pid: {}", gettid());
+}
+
+#[cfg(target_os = "macos")]
+fn getpid(){
+    info!("not support in macOs");
 }
 
 #[async_trait]
@@ -131,7 +143,7 @@ pub trait ExchangeFeed: Service {
         thread::spawn(move || {
             set_affinity(pin_id);
 
-            // get_affinity();
+            getpid();
 
             let rt = match Self::create_single_thread_runtime(feed.lock().unwrap().name()) {
                 Ok(rt) => rt,
@@ -145,8 +157,9 @@ pub trait ExchangeFeed: Service {
                 info!(
                     "Started {} thread: {:?}",
                     self_clone.lock().unwrap().name(),
-                    std::thread::current().id()
+                    std::thread::current().id(),
                 );
+                
                 let max_retries = 5; // Maximum retry attempts
                 let mut retries = 0;
 
