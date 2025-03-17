@@ -59,10 +59,11 @@ pub fn create_exchange<T: Exchange>(config_path: &str) -> T {
 
 #[async_trait]
 pub trait ExchangeFeed: Service {
-    fn create_single_thread_runtime() -> Result<Runtime, Box<dyn std::error::Error>> {
+    fn create_single_thread_runtime(name: &str) -> Result<Runtime, Box<dyn std::error::Error>> {
         // let rt = tokio::runtime::Builder::new_multi_thread()
         let rt = tokio::runtime::Builder::new_current_thread()
             // .worker_threads(1)
+            .thread_name(name)
             .enable_all()
             .build()?;
         Ok(rt)
@@ -132,7 +133,7 @@ pub trait ExchangeFeed: Service {
 
             // get_affinity();
 
-            let rt = match Self::create_single_thread_runtime() {
+            let rt = match Self::create_single_thread_runtime(feed.lock().unwrap().name()) {
                 Ok(rt) => rt,
                 Err(e) => {
                     eprintln!("Error building runtime: {}", e);
