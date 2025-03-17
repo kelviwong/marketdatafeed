@@ -10,11 +10,7 @@ use tokio_tungstenite::{
     tungstenite::{Message, Utf8Bytes},
 };
 use tracing::{error, info, warn};
-
-#[cfg(target_os = "linux")]
-use nix::sys::sysconf;
-#[cfg(target_os = "linux")]
-use nix::sys::sysconf::SysconfVar;
+use num_cpus;
 
 #[cfg(target_os = "linux")]
 use nix::unistd::gettid;
@@ -37,8 +33,8 @@ fn get_affinity() {
 
 #[cfg(target_os = "linux")]
 fn set_affinity(pin_id: usize) {
-    let num_cores = sysconf(SysconfVar::_NPROCESSORS_ONLN).unwrap().unwrap();
-    println!("Available cores: {}", num_cores);
+    let num_cores = num_cpus::get();
+    println!("Number of CPU cores: {}", num_cores);
 
     let mut cpuset = CpuSet::new();
     
