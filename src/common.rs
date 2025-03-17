@@ -12,9 +12,9 @@ use tokio_tungstenite::{
 use tracing::{error, info, warn};
 
 #[cfg(target_os = "linux")]
-use nix::unistd::sysconf;
+use nix::sys::sysconf;
 #[cfg(target_os = "linux")]
-use nix::unistd::SysconfVar;
+use nix::sys::sysconf::SysconfVar;
 
 #[cfg(target_os = "linux")]
 use nix::unistd::gettid;
