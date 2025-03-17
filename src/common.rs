@@ -82,7 +82,7 @@ fn getpid(){
 pub trait ExchangeFeed: Service {
     fn create_single_thread_runtime(name: &str) -> Result<Runtime, Box<dyn std::error::Error>> {
 
-        set_affinity(20);
+        set_affinity(1);
 
             // get thread id
         getpid();
