@@ -20,27 +20,32 @@ use nix::unistd::Pid;
 
 use crate::candle::{CandleStickBuilder, candle_stick};
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 fn set_affinity(pin_id: usize) {
     println!("CPU affinity is not supported on macOS.");
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 fn get_affinity() {
     println!("Get CPU affinity is not supported on macOS.");
 }
 
 #[cfg(target_os = "linux")]
 fn set_affinity(pin_id: usize) {
-    // let num_cores = sysconf(nix::unistd::SysconfVar::_NPROCESSORS_ONLN);
-    // info!("Number of cores: {}", num_cores);
-
     let mut cpuset = CpuSet::new();
-    cpuset.set(pin_id).unwrap(); // Pin to CPU 0
+    
+    if let Err(e) = cpuset.set(pin_id) {
+        eprintln!("Failed to set CPU affinity: {:?}", e);
+        return;
+    }
 
-    let pid = nix::unistd::Pid::this();
-    sched_setaffinity(pid, &cpuset).unwrap();
-    info!("Affinity set on Linux on {:?}", pin_id);
+    let pid = Pid::this();
+    if let Err(e) = sched_setaffinity(pid, &cpuset) {
+        eprintln!("Failed to set affinity for PID {:?}: {:?}", pid, e);
+        return;
+    }
+
+    info!("Affinity set on Linux on core {:?}", pin_id);
 }
 
 #[cfg(target_os = "linux")]
@@ -64,7 +69,7 @@ fn getpid() {
     info!("pid: {}", gettid());
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 fn getpid(){
     info!("not support in macOs");
 }
@@ -72,9 +77,15 @@ fn getpid(){
 #[async_trait]
 pub trait ExchangeFeed: Service {
     fn create_single_thread_runtime(name: &str) -> Result<Runtime, Box<dyn std::error::Error>> {
+
+        set_affinity(2);
+
+            // get thread id
+        getpid();
+
         // let rt = tokio::runtime::Builder::new_multi_thread()
         let rt = tokio::runtime::Builder::new_current_thread()
-            // .worker_threads(1)
+            .worker_threads(1)
             .thread_name(name)
             .enable_all()
             .build()?;
@@ -141,11 +152,7 @@ pub trait ExchangeFeed: Service {
         let self_clone = Arc::clone(&feed);
 
         thread::spawn(move || {
-            set_affinity(pin_id);
-
-            // get thread id
-            getpid();
-
+        
             let rt = match Self::create_single_thread_runtime(feed.lock().unwrap().name()) {
                 Ok(rt) => rt,
                 Err(e) => {
