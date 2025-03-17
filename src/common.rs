@@ -143,6 +143,7 @@ pub trait ExchangeFeed: Service {
         thread::spawn(move || {
             set_affinity(pin_id);
 
+            // get thread id
             getpid();
 
             let rt = match Self::create_single_thread_runtime(feed.lock().unwrap().name()) {
