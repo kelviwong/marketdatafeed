@@ -12,6 +12,11 @@ use tokio_tungstenite::{
 use tracing::{error, info, warn};
 
 #[cfg(target_os = "linux")]
+use nix::unistd::sysconf;
+#[cfg(target_os = "linux")]
+use nix::unistd::SysconfVar;
+
+#[cfg(target_os = "linux")]
 use nix::unistd::gettid;
 #[cfg(target_os = "linux")]
 use nix::sched::{CpuSet, sched_setaffinity};
@@ -32,6 +37,9 @@ fn get_affinity() {
 
 #[cfg(target_os = "linux")]
 fn set_affinity(pin_id: usize) {
+    let num_cores = sysconf(SysconfVar::_NPROCESSORS_ONLN).unwrap().unwrap();
+    println!("Available cores: {}", num_cores);
+
     let mut cpuset = CpuSet::new();
     
     if let Err(e) = cpuset.set(pin_id) {
