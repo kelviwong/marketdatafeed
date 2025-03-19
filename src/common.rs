@@ -224,6 +224,7 @@ pub trait Service {
     fn symbol(&self) -> &str;
     fn base(&self) -> &str;
     fn enable(&self) -> bool;
+    fn pin(&self) -> usize;
 
     // async fn connect(&self, on_success: impl FnOnce(String) + Send) -> Result<String, String>;
 
@@ -241,15 +242,17 @@ pub struct BasicService {
     symbol: String,
     enable: bool,
     name: String,
+    pin: isize,
 }
 
 impl BasicService {
-    pub fn new(base_url: String, symbol: String, enable: bool, name: String) -> Self {
+    pub fn new(base_url: String, symbol: String, enable: bool, name: String, pin: isize) -> Self {
         BasicService {
             base_url,
             symbol,
             enable,
             name,
+            pin
         }
     }
 
@@ -267,5 +270,9 @@ impl BasicService {
 
     pub fn symbol(&self) -> &str {
         &self.symbol
+    }
+
+    pub fn pin(&self) -> isize {
+        self.pin
     }
 }

@@ -66,6 +66,7 @@ impl OKX {
                 config.okx.symbol,
                 config.okx.enable,
                 "OKX".to_string(),
+                config.okx.pin,
             ),
         })
     }
@@ -111,6 +112,10 @@ impl Service for OKX {
 
     fn enable(&self) -> bool {
         self.enable()
+    }
+    
+    fn pin(&self) -> usize {
+        self.pin()
     }
 }
 

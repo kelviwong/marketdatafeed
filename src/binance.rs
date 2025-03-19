@@ -44,6 +44,7 @@ impl Binance {
                 config.binance.symbol,
                 config.binance.enable,
                 "Binance".to_string(),
+                config.binance.pin,
             ),
         })
     }
@@ -86,6 +87,10 @@ impl Service for Binance {
 
     fn enable(&self) -> bool {
         self.enable()
+    }
+    
+    fn pin(&self) -> usize {
+        self.pin()
     }
 }
 
