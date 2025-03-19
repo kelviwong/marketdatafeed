@@ -11,6 +11,7 @@ you need to lib as well in https://github.com/kelviwong/marketdatafeed
 4. able to retry if cannot connect to server
 5. tried to implement static factory
 6. open close prinicpal
+7. cpu core pin to specific core
 
 TODO:
 1. added standard log
